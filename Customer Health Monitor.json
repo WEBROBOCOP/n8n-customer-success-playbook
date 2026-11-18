@@ -1,0 +1,275 @@
+{
+  "name": "Customer Health Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-5",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 5"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        832,
+        208
+      ],
+      "id": "dd054853-4e7d-42c4-99bc-1a94e69f0aad",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "BoF9bL04qV5lmCYM",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const accounts = [\n  { company: \"Acme GmbH\", executions_30d: 1200, executions_prev_30d: 1100, active_users: 14, days_since_login: 2, open_tickets: 0 },\n  { company: \"Nordlicht AG\", executions_30d: 300, executions_prev_30d: 900, active_users: 4, days_since_login: 18, open_tickets: 3 },\n  { company: \"Lisboa Retail\", executions_30d: 800, executions_prev_30d: 820, active_users: 4, days_since_login: 16, open_tickets: 1 },\n  { company: \"Dublin Fintech\", executions_30d: 90, executions_prev_30d: 400, active_users: 2, days_since_login: 31, open_tickets: 2 },\n  { company: \"Madrid Logistics\", executions_30d: 2100, executions_prev_30d: 1500, active_users: 22, days_since_login: 1, open_tickets: 0 }\n];\nreturn accounts.map(a => ({ json: a }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "6fb95af4-cd68-4909-aaa0-03c74aa1616a",
+      "name": "Sample accounts"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "85445fa7-b6d7-49b5-a6cb-47358a6dbcdd",
+      "name": "Start"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "967676cb-cda5-47f4-8bcc-e8fe962ab494",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "Healthy",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.4,
+      "position": [
+        672,
+        0
+      ],
+      "id": "3ed286bb-aa79-49c2-b938-8f4e505ac8c5",
+      "name": "Needs attention?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a customer success manager at a workflow automation company.\nAccount: {{ $json.company }}\nHealth score: {{ $json.score }} ({{ $json.status }})\nUsage change vs last month: {{ $json.usage_change_pct }}%\nActive users: {{ $json.active_users }}\nDays since last login: {{ $json.days_since_login }}\nOpen tickets: {{ $json.open_tickets }}\n\nWrite the response in exactly this format, with no extra text:\n\nDIAGNOSIS: <one sentence on the likely risk>\nSUBJECT: <email subject line>\nEMAIL:\n<email body, under 90 words, friendly, offers help without sounding alarmed. Sign off as \"David, Customer Success\" and address the customer team generically, e.g. \"Hi team,\">\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        896,
+        0
+      ],
+      "id": "40edf7a1-008b-4634-a338-72871c0bedcc",
+      "name": "Draft CSM actions"
+    },
+    {
+      "parameters": {
+        "sendTo": "csm@example.com",
+        "subject": "=Health alert: {{ $json.company }}",
+        "message": "=<p><b>Diagnosis:</b> {{ $json.diagnosis }}</p>\n\n<p><b>Suggested email to the customer</b><br>\n<b>Subject:</b> {{ $json.subject }}</p>\n\n<p>{{ $json.email.replace(/\\n/g, '<br>') }}</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1488,
+        0
+      ],
+      "id": "930f2ddc-c86f-4614-89f7-2e10dcbb9c72",
+      "name": "Send alert to CSM",
+      "webhookId": "ed720b18-116e-4983-ac42-03665fd1bedc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "uTuX9XgNPlGuISU4",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2f0b8432-9eac-4d4c-974a-0b8327899354",
+              "name": "company",
+              "value": "={{ $('Needs attention?').item.json.company }}",
+              "type": "string"
+            },
+            {
+              "id": "b7376550-a40f-4332-9315-198ca8d49b7b",
+              "name": "diagnosis",
+              "value": "={{ $json.text.match(/DIAGNOSIS:\\s*(.*)/)[1].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "0813dbec-019a-48dd-b263-980d8d524511",
+              "name": "subject",
+              "value": "={{ $json.text.match(/SUBJECT:\\s*(.*)/)[1].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "dbb978b2-b840-493a-b67c-f837489478fa",
+              "name": "email",
+              "value": "={{ $json.text.split('EMAIL:')[1].trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1264,
+        0
+      ],
+      "id": "ad499a46-3b04-41c3-ad0a-b62fcf53dad8",
+      "name": "Split into fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const a = item.json;\n  let score = 100;\n  const change = (a.executions_30d - a.executions_prev_30d) / a.executions_prev_30d;\n  if (change < -0.5) score -= 35; else if (change < -0.2) score -= 15;\n  if (a.days_since_login > 30) score -= 30; else if (a.days_since_login > 14) score -= 15;\n  if (a.active_users < 5) score -= 15;\n  if (a.open_tickets >= 3) score -= 15;\n  const status = score >= 75 ? \"Healthy\" : score >= 50 ? \"Watch\" : \"At risk\";\n  return { json: { ...a, usage_change_pct: Math.round(change * 100), score, status } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "9ea055a3-ac8b-4832-9065-1a585b137c9e",
+      "name": "Calculate health score"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Draft CSM actions",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sample accounts": {
+      "main": [
+        [
+          {
+            "node": "Calculate health score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Sample accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs attention?": {
+      "main": [
+        [
+          {
+            "node": "Draft CSM actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft CSM actions": {
+      "main": [
+        [
+          {
+            "node": "Split into fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into fields": {
+      "main": [
+        [
+          {
+            "node": "Send alert to CSM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate health score": {
+      "main": [
+        [
+          {
+            "node": "Needs attention?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "5e937fe2-ec24-4fd2-a49b-155d4937ea17",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "77567bf8df2cd34aeed696d7c52f5e1c4eececd807479a93f2f7173a7c75b41e"
+  },
+  "nodeGroups": [],
+  "id": "g9bZl6F04weZf0ZA",
+  "tags": []
+}
