@@ -1,0 +1,241 @@
+{
+  "name": "Customer Onboarding Kit",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-5",
+          "cachedResultName": "Claude Sonnet 5"
+        },
+        "options": {
+          "maxTokensToSample": 1500
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        304,
+        240
+      ],
+      "id": "df7f295f-85ef-4146-95d2-133d3e243ce9",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "BoF9bL04qV5lmCYM",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "New customer onboarding",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Company",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Goal",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Reduce manual work"
+                  },
+                  {
+                    "option": "Connect our system"
+                  },
+                  {
+                    "option": "Add AI to our processes"
+                  },
+                  {
+                    "option": "other"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "TeamSize",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "GoLive",
+              "fieldType": "date"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "df35a2de-fafb-4f3a-a6a2-eb422f2365a9",
+      "name": "Customer intake form",
+      "webhookId": "0cf0e7d6-c9e8-4066-9931-0751eb03fa62"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a customer success manager at a workflow automation company, onboarding a new enterprise customer.\nCompany: {{ $json.Company }}\nContact: {{ $json.Name }}\nMain goal: {{ $json.Goal }}\nTeam size: {{ $json.TeamSize }}\nTarget go-live: {{ $json.GoLive }}\n\nWrite the response in exactly this structure, with no extra text:\n\nWELCOME EMAIL\nSubject: <subject line>\n<friendly email under 100 words, addressed to the contact by name, signed \"David, Customer Success\">\n\nKICKOFF AGENDA\n<5 numbered items for a 45-minute kickoff call, each with minutes>\n\n30-DAY PLAN\n<3 bullets, each with a measurable outcome>\n\n60-DAY PLAN\n<3 bullets, each with a measurable outcome>\n\n90-DAY PLAN\n<3 bullets, each with a measurable outcome>",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        224,
+        0
+      ],
+      "id": "8f09fb4e-ff04-4b5b-9a34-d748e3bba249",
+      "name": "Generate onboarding kit"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "474c8276-4658-4a48-bcd1-bc135b4e6e79",
+              "name": "company",
+              "value": "={{ $('Customer intake form').item.json.Company }}",
+              "type": "string"
+            },
+            {
+              "id": "0c564e07-7406-4d08-8e55-9aef20de78b6",
+              "name": "welcome",
+              "value": "={{ $json.text.split('KICKOFF AGENDA')[0].replace('WELCOME EMAIL','').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "54846914-bd76-4ef6-9081-a845b904158b",
+              "name": "agenda",
+              "value": "={{ $json.text.split('KICKOFF AGENDA')[1].split('30-DAY PLAN')[0].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "431b065b-96d6-4aab-9a50-379fb68e0e39",
+              "name": "plan30",
+              "value": "={{ $json.text.split('30-DAY PLAN')[1].split('60-DAY PLAN')[0].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "633aa1ac-9406-459f-bca4-2994d468bfa5",
+              "name": "plan60",
+              "value": "={{ $json.text.split('60-DAY PLAN')[1].split('90-DAY PLAN')[0].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "644399ec-6ae9-4da6-ba53-219d9329e3d5",
+              "name": "plan90",
+              "value": "={{ $json.text.split('90-DAY PLAN')[1].trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        576,
+        0
+      ],
+      "id": "a17a41b4-779a-4782-9d80-3a2b6343e0fd",
+      "name": "Split into sections"
+    },
+    {
+      "parameters": {
+        "sendTo": "csm@example.com",
+        "subject": "=Onboarding kit: {{ $json.company }}",
+        "message": "=<div style=\"font-family:Arial,Helvetica,sans-serif;max-width:640px;margin:auto;color:#222;line-height:1.5\">\n  <h2 style=\"background:#ff6d5a;color:#fff;padding:16px;margin:0;border-radius:6px 6px 0 0\">Onboarding kit: {{ $json.company }}</h2>\n  <div style=\"border:1px solid #ddd;padding:20px;border-radius:0 0 6px 6px\">\n\n    <h3 style=\"color:#ff6d5a\">Welcome email (draft)</h3>\n    <div style=\"background:#f7f7f7;padding:12px;border-radius:6px\">{{ $json.welcome.replace(/\\n/g, '<br>') }}</div>\n\n    <h3 style=\"color:#ff6d5a\">Kickoff agenda</h3>\n    <p>{{ $json.agenda.replace(/\\n/g, '<br>') }}</p>\n\n    <h3 style=\"color:#ff6d5a\">30-day plan</h3>\n    <p>{{ $json.plan30.replace(/\\n/g, '<br>') }}</p>\n\n    <h3 style=\"color:#ff6d5a\">60-day plan</h3>\n    <p>{{ $json.plan60.replace(/\\n/g, '<br>') }}</p>\n\n    <h3 style=\"color:#ff6d5a\">90-day plan</h3>\n    <p>{{ $json.plan90.replace(/\\n/g, '<br>') }}</p>\n\n    <p style=\"color:#888;font-size:12px;margin-top:24px\">Draft for CSM review. Nothing has been sent to the customer.</p>\n  </div>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        0
+      ],
+      "id": "306944a8-090a-468c-b665-eac3740b6a59",
+      "name": "Send kit to CSM",
+      "webhookId": "484a76d6-f58f-434d-b4a2-79c7e70c2b7d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "uTuX9XgNPlGuISU4",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate onboarding kit",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer intake form": {
+      "main": [
+        [
+          {
+            "node": "Generate onboarding kit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate onboarding kit": {
+      "main": [
+        [
+          {
+            "node": "Split into sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into sections": {
+      "main": [
+        [
+          {
+            "node": "Send kit to CSM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "888bfda4-665f-4379-8e45-9ac0c4a0aea4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "77567bf8df2cd34aeed696d7c52f5e1c4eececd807479a93f2f7173a7c75b41e"
+  },
+  "nodeGroups": [],
+  "id": "BWl0lplrAXDG70vc",
+  "tags": []
+}
