@@ -59,7 +59,59 @@ Each account starts at 100 points and loses points for four signals:
 
 ---
 
+---
+
+## Project 2: Customer Onboarding Kit
+
+![Onboarding workflow canvas](onboarding-canvas.png)
+
+### 1 · Problem
+*What goes wrong today? For whom? How often?*
+
+After a deal closes, a CSM has to prepare a welcome email, a kickoff agenda and a success plan for every new customer. It takes time, and the quality varies from one customer to the next.
+
+### 2 · Solution in one sentence
+*When [trigger], then [result] should happen for [whom], so that [benefit].*
+
+> When a new customer submits the intake form, then a welcome email, kickoff agenda and 30/60/90-day plan should be drafted for the CSM, so that onboarding starts fast and consistently.
+
+### 3 · Sketch: five questions about the flow
+
+| Step | Question | Answer |
+|---|---|---|
+| **Start** | What triggers the flow? | A new customer submits the intake form |
+| **In** | What data arrives? Which fields? | Company, contact name, main goal, team size, target go-live date |
+| **Do** | What happens to the data? | Claude drafts the welcome email, kickoff agenda and 30/60/90-day plan. The answer is split into sections |
+| **Out** | What comes out at the end? | One formatted email to the CSM with the full kit |
+| **Human** | Who looks at it before anything goes out? | The CSM edits and sends it. Nothing is sent to the customer automatically |
+
+### How it works
+**Flow:** Customer intake form → Generate onboarding kit (Claude) → Split into sections → Send kit to CSM
+
+- The **intake form** collects five fields: company, name, main goal, team size and go-live date.
+- **Claude** writes the kit in a fixed structure, so every customer gets the same sections.
+- A small step **splits the answer** into welcome email, agenda and three plans.
+- The **CSM receives one formatted email** with everything in separate sections, marked as a draft.
+
+### Example output
+![Sample onboarding kit email](onboarding-email.png)
+
+### How I'd explain this to a customer
+"As soon as you tell us your goal and your go-live date, we prepare a clear plan for your first 90 days: who does what, and what success looks like at 30, 60 and 90 days. You start with a plan instead of a blank page."
+
+### Setup
+1. Import `Customer Onboarding Kit.json` into n8n (menu, **Import from file**).
+2. Connect your own Anthropic and Gmail credentials.
+3. Set the recipient in the Gmail node (it is `csm@example.com` here).
+4. Click **Execute workflow**, then fill in the form that opens.
+
+### Next steps
+- Save each kit to a CRM record or a shared drive
+- Add a reminder for the CSM to review the draft within one working day
+- Track time from signature to kickoff to measure the effect
+
+---
+
 ## Roadmap
-- 02 Customer onboarding kit 
 - 03 QBR and ROI report generator
 - 04 Renewal and expansion radar
